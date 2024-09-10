@@ -10,6 +10,7 @@
 		016BD8F02C506EAF001E099B /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 016BD8EF2C506EAF001E099B /* main.c */; };
 		016BD8F82C5CB75D001E099B /* HashMap.c in Sources */ = {isa = PBXBuildFile; fileRef = 016BD8F72C5CB75D001E099B /* HashMap.c */; };
 		016BD8FD2C5EC70E001E099B /* http.c in Sources */ = {isa = PBXBuildFile; fileRef = 016BD8FC2C5EC70E001E099B /* http.c */; };
+		01BF8A612C8AD59700C13C01 /* StaticHashMaps.c in Sources */ = {isa = PBXBuildFile; fileRef = 01BF8A602C8AD59700C13C01 /* StaticHashMaps.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -31,6 +32,8 @@
 		016BD8F72C5CB75D001E099B /* HashMap.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = HashMap.c; sourceTree = "<group>"; };
 		016BD8FB2C5EC70E001E099B /* http.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = http.h; sourceTree = "<group>"; };
 		016BD8FC2C5EC70E001E099B /* http.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = http.c; sourceTree = "<group>"; };
+		01BF8A5F2C8AD59700C13C01 /* StaticHashMaps.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = StaticHashMaps.h; sourceTree = "<group>"; };
+		01BF8A602C8AD59700C13C01 /* StaticHashMaps.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = StaticHashMaps.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -76,6 +79,8 @@
 			children = (
 				016BD8F62C5CB75D001E099B /* HashMap.h */,
 				016BD8F72C5CB75D001E099B /* HashMap.c */,
+				01BF8A5F2C8AD59700C13C01 /* StaticHashMaps.h */,
+				01BF8A602C8AD59700C13C01 /* StaticHashMaps.c */,
 			);
 			path = DataStructures;
 			sourceTree = "<group>";
@@ -139,6 +144,7 @@
 			files = (
 				016BD8F82C5CB75D001E099B /* HashMap.c in Sources */,
 				016BD8F02C506EAF001E099B /* main.c in Sources */,
+				01BF8A612C8AD59700C13C01 /* StaticHashMaps.c in Sources */,
 				016BD8FD2C5EC70E001E099B /* http.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

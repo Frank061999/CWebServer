@@ -1,20 +1,25 @@
 #include <arpa/inet.h>
 #include <pthread.h>
-#include <stdio.h>
-#include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <assert.h>
 #include <stdint.h>
 #include "DataStructures/HashMap.h"
 #include "http.h"
-#include <sys/ioctl.h>
-
 #include <string.h>
+#include "DataStructures/StaticHashMaps.h"
+#include <unistd.h>
+#include <limits.h>
+#include <sys/stat.h> // for mkdir
+#include <sys/types.h> // for modes
+#include <errno.h>
+
+char SITE_DIRECTORY[PATH_MAX];
 
 void* handle_client(void* socket){
+    pthread_t thread_id = pthread_self();
+    printf("Handling Client %lu\n", (unsigned long)thread_id);
     int client_socket_fd = (int)(uintptr_t) socket;
-    size_t bufferSize = 256;
+    size_t bufferSize = 2048;
     
     char* buffer = (char*) calloc(1, bufferSize);
     int errorCode;
@@ -22,18 +27,19 @@ void* handle_client(void* socket){
     HttpRequest hr;
     do {
         memset(&hr, 0, sizeof(hr));
-        errorCode = ReceiveRequestHeaders(client_socket_fd, buffer, bufferSize, &nextRequestPTR, &hr);
-        if(errorCode == -1) break;
+        errorCode = ReceiveRequest(client_socket_fd, buffer, bufferSize, &nextRequestPTR, &hr);
+        if(errorCode == -1) {
+            FreeHashMap(hr.headers);
+            break;
+        }
         
-        printf("Method: %s\nPath: %s\nVersion: %s\n",hr.method, hr.url, hr.version);
+        printf("Method: %s\tPath: %s\tVersion: %s\n",hr.method, hr.url, hr.version);
 //        PrintHashMap(hr.headers);
         
-        const char *response = "Hello, from MAC!";
-        long err = send(client_socket_fd, response, strlen(response), 0);
-        if(err == -1) {
-            printf("Failed to send\n");
-        }
-        printf("Sent message!\n");
+        SendResponse(client_socket_fd, &hr);
+//        pthread_t thread_id = pthread_self();
+//        printf("Sent message! Thread id: %lu\n", (unsigned long)thread_id);
+        FreeHashMap(hr.headers);
     } while (errorCode != -1);
     
     
@@ -59,8 +65,34 @@ void print_with_control_characters(const char *str) {
     }
 }
 
+int initDirectory(void){
+    if(mkdir("site", 0000700) == -1){ // rwx for owner
+        if (errno != EEXIST) {
+            perror("Error creating directory");
+            exit(1);
+        }
+    }
+    if (getcwd(SITE_DIRECTORY, PATH_MAX) == NULL) {
+        perror("Error getting current working directory");
+        exit(1);
+    }
+    {
+        char* temp = "/site";
+        if(PATH_MAX * (2/3) - strlen(temp) - strlen(SITE_DIRECTORY) < 0) {
+            printf("Error: directory PATH_MAX overflow\n Terminating program.\n");
+            exit(1);
+        }
+        strcat(SITE_DIRECTORY, temp);
+    }
+    chdir(SITE_DIRECTORY);
+    printf("Directory initialized: %s\n", SITE_DIRECTORY);
+    return 0;
+}
 
 int main(int argc, char** argv) {
+
+    initDirectory();
+    
     
     int server_socket_fd = socket(AF_INET, SOCK_STREAM, 0);
     if(server_socket_fd < 0){
@@ -73,7 +105,7 @@ int main(int argc, char** argv) {
     struct sockaddr_in server_addr;
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = INADDR_ANY;
-    server_addr.sin_port = htons(3000);
+    server_addr.sin_port = htons(80);
     
     if (bind(server_socket_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0){
         return 1;

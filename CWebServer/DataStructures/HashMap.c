@@ -13,6 +13,7 @@
 #define BUCKET_SIZE 127
 
 
+
 unsigned long long hash(const char* string, size_t strLen){
     const unsigned long long fnvPrime = 1099511628211ULL;
     unsigned long long hash = 14695981039346656037ULL;
@@ -32,6 +33,7 @@ typedef struct HashMap {
     size_t bucketSize;
     struct KeyValue bucket[];
 } HashMap;
+
 
 
 
@@ -77,6 +79,7 @@ CheckIfEmptySlot:
 }
 
 void FreeHashMap(HashMap* hm){
+    if(!hm) return;
     for (int i = 0; i < hm->bucketSize; i++) {
         if(hm->bucket[i].value) free(hm->bucket[i].value);
     }
@@ -97,13 +100,23 @@ char* HashMapGet(HashMap* hashMap, const char* key){
     return NULL;
 }
 
+
 void PrintHashMap(HashMap* hashMap) {
     int number_of_headers = 0;
+    int collision_count = 0;
     for (size_t i = 0; i < hashMap->bucketSize; i++) {
         if (hashMap->bucket[i].value != NULL) {
             printf("Bucket %zu: Key = '%s', Value = '%s'\n", i, hashMap->bucket[i].key, hashMap->bucket[i].value);
             number_of_headers++;
+            // Check for collisions by verifying if the stored key hashes to the current slot
+            unsigned long long expectedSlot = hash(hashMap->bucket[i].key, strlen(hashMap->bucket[i].key)) % hashMap->bucketSize;
+            if (expectedSlot != i) {
+                collision_count++;
+            }
         }
     }
-    printf("Number of headers: %d \n",number_of_headers);
+    printf("Number of headers: %d\n", number_of_headers);
+    printf("Load Factor: %.2f\n", (double)number_of_headers / hashMap->bucketSize);
+    printf("Number of collisions: %d\n", collision_count);
 }
+

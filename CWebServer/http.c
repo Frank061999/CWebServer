@@ -8,14 +8,27 @@
 #include "http.h"
 #include "DataStructures/HashMap.h"
 #include <arpa/inet.h>
-#include <stdlib.h>
-#include <stdbool.h>
 #include <string.h>
+#include <limits.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include "DataStructures/StaticHashMaps.h"
+#include <errno.h>
 #define HEADER_BUCKET_SIZE 29
 
+int isValidPath(char* url){
+    extern char SITE_DIRECTORY[PATH_MAX];
+    char buf[PATH_MAX];
+    if(realpath(url, buf) == NULL){
+        return 0;
+    }
+    return strncmp(SITE_DIRECTORY, buf,strlen(SITE_DIRECTORY)) == 0;
+}
 
-int ValidateHttpHeaders(HttpRequest* hr){
+int HasValidHeaders(HttpRequest* hr){
     // TODO: Implement
+    //    if(!isValidPath(hr->url)) return 0;
     return 1;
 }
 
@@ -33,13 +46,13 @@ HttpRequest ParseHttpHeaders(char* request, size_t requestLength){
         }
         switch (i) {
             case 0:
-                strcpy(hr.method, token);
+                strlcpy(hr.method, token, sizeof(hr.method));
                 break;
             case 1:
-                strcpy(hr.url, token);
+                strlcpy(hr.url, token, sizeof(hr.url));
                 break;
             case 2:
-                strcpy(hr.version, token);
+                strlcpy(hr.version, token, sizeof(hr.version));
                 break;
         }
     }
@@ -56,27 +69,21 @@ HttpRequest ParseHttpHeaders(char* request, size_t requestLength){
         HashMapAppend(hr.headers, key, strlen(key)+1, value, strlen(value)+1);
         timesEndofLineEncountered--;
     }
-    
+    if(!HasValidHeaders(&hr)) hr.isValid = 0; else hr.isValid = 1;
     
     return hr;
 }
 
-int isValidHttpMethod(char* method) { // TODO: Replace with HashSet lookup
-    return strcmp(method, "GET") == 0 || strcmp(method, "POST") == 0 ||
-    strcmp(method, "PUT") == 0 || strcmp(method, "DELETE") == 0 ||
-    strcmp(method, "HEAD") == 0 || strcmp(method, "OPTIONS") == 0 ||
-    strcmp(method, "PATCH") == 0 || strcmp(method, "TRACE") == 0 ||
-    strcmp(method, "CONNECT") == 0;
-}
 
-int isValidURL(char* url){
-    return 1; // TODO: Implement
-}
+
+
 int isValidHttpVersion(char* version){
     return 1; // TODO: Implement
 }
 
-int ReceiveRequestHeaders(int client_socket, char* buffer, size_t bufferSize, char** nextRequestPTR, HttpRequest* hr){
+// This method supports pipelining but apprently pipelining is disabled in most browsers :(
+int ReceiveRequest(int client_socket, char* buffer, size_t bufferSize, char** nextRequestPTR, HttpRequest* hr){
+    bufferSize -= 1; // leave space for null terminator
     const char* lastElement = buffer + bufferSize - 1;
     char* iterator = buffer;
     char* readFrom = iterator;
@@ -94,7 +101,7 @@ int ReceiveRequestHeaders(int client_socket, char* buffer, size_t bufferSize, ch
         currentRequestPointer = *nextRequestPTR;
         *nextRequestPTR = temp;
         while(**nextRequestPTR == '\r' || **nextRequestPTR == '\n') (*nextRequestPTR)++;
-        if(*nextRequestPTR >= lastElement) *nextRequestPTR = buffer;
+        if(*nextRequestPTR > lastElement) *nextRequestPTR = buffer;
         goto ParseRequest;
     } else {
         // Partial request
@@ -107,11 +114,10 @@ int ReceiveRequestHeaders(int client_socket, char* buffer, size_t bufferSize, ch
     
 Receive:
     
-    
     while(1) {
         size_t bytesToReceive = lastElement - iterator + 1;
         if(bytesToReceive == 0) return -1;
-        ssize_t bytesReceived = recv(client_socket, iterator, bytesToReceive, 0);
+        ssize_t bytesReceived = recv(client_socket, iterator, bytesToReceive, 0); // TODO: Add timeout
         if(bytesReceived <= 0) return -1;
         iterator += bytesReceived;
         if((temp = strnstr(readFrom, "\r\n\r\n", bufferSize)) != NULL) break;
@@ -119,8 +125,8 @@ Receive:
     }
     currentRequestPointer = buffer;
     *nextRequestPTR = temp;
-    while(**nextRequestPTR == '\r' || **nextRequestPTR == '\n') (*nextRequestPTR)++;
-    if(*nextRequestPTR >= lastElement) *nextRequestPTR = buffer;
+    while(**nextRequestPTR == '\r' || **nextRequestPTR == '\n') (*nextRequestPTR)++; // TODO: Maybe just add 4 to the pointer (or 3?)
+    if(*nextRequestPTR > lastElement) *nextRequestPTR = buffer;
     
     
 ParseRequest:
@@ -128,4 +134,124 @@ ParseRequest:
     
     // TODO: Handle body
     return 0;
+}
+void Send500(int client_socket) {
+    const char *response_header =
+        "HTTP/1.1 500 Internal Server Error\r\n"
+        "Content-Type: text/html\r\n"
+        "Content-Length: %zu\r\n"
+        "Connection: close\r\n"
+        "\r\n";
+    
+    const char *response_body =
+        "<html><head><title>500 Internal Server Error</title></head>"
+        "<body><h1>500 Internal Server Error</h1>"
+        "<p>There was an error processing your request.</p></body></html>";
+
+    size_t body_length = strlen(response_body);
+    
+    char response[1024];
+    snprintf(response, sizeof(response), response_header, body_length);
+    strncat(response, response_body, sizeof(response) - strlen(response) - 1);
+
+    // Send the response to the client
+    send(client_socket, response, strlen(response), 0);
+}
+void Send404(int client_socket) {
+    const char *response_header =
+        "HTTP/1.1 404 Not Found\r\n"
+        "Content-Type: text/html\r\n"
+        "Content-Length: %zu\r\n"
+        "Connection: close\r\n"
+        "\r\n";
+    
+    const char *response_body =
+        "<html><head><title>404 Not Found</title></head>"
+        "<body><h1>404 Not Found</h1>"
+        "<p>The requested URL was not found on this server.</p></body></html>";
+
+    size_t body_length = strlen(response_body);
+    
+
+    char response[strlen(response_header) + body_length + 1];
+    snprintf(response, sizeof(response), response_header, body_length);
+    strlcat(response, response_body, sizeof(response));
+
+    send(client_socket, response, strlen(response), 0);
+}
+int SendResponse(int client_socket, HttpRequest* hr){
+    
+    if(!hr->isValid) {
+        char* response = "HTTP/1.1 400 Bad Request\r\n\r\n";
+        send(client_socket, response, strlen(response), 0);
+        return 1;
+    }
+    extern char SITE_DIRECTORY[PATH_MAX];
+    char path[PATH_MAX];
+
+    char *requestedPath = hr->url;
+    if(*requestedPath == '/') requestedPath++;
+    if(*requestedPath == '\0'){
+        requestedPath = alloca(strlen(hr->url) + 4);
+        requestedPath[0] = '.';
+        requestedPath[1] = '/';
+    }
+    char* result = realpath(requestedPath, path);
+    if(result == NULL || strncmp(SITE_DIRECTORY, path, strlen(SITE_DIRECTORY)) != 0){
+        Send404(client_socket);
+        return 1;
+    }
+    
+    // check to see if it is file or directory:
+    struct stat statbuf;
+    if (stat(path, &statbuf) != 0) {
+        Send500(client_socket);
+        return 1;
+    }
+    if(S_ISDIR(statbuf.st_mode)){
+        char* temp = "/index.html";
+        strlcat(path, temp, PATH_MAX);
+        if (stat(path, &statbuf) != 0) {
+            if(errno == ENOENT) Send404(client_socket);
+            else Send500(client_socket);
+            return 1;
+        }
+    }
+    int fd;
+    if((fd = open(path, O_RDONLY, O_CREAT | O_EXCL)) == -1){
+        Send500(client_socket);
+        return 1;
+    }
+    char headers[128];
+    
+    // check if file has extension
+    const char* mime;
+    char* lastDot = strrchr(path,'.');
+    char* lastSlash = strrchr(path, '/');
+    if(lastDot > lastSlash && lastDot != path + strlen(path) - 1){
+        mime = GetMime(lastDot + 1);
+    }
+    else mime = defaultMime; // no extension
+    
+    
+    
+    snprintf(headers, sizeof(headers),
+             "HTTP/1.1 200 OK\r\n"
+             "Content-Type: %s\r\n"
+             "Content-Length: %lld\r\n\r\n",
+             mime,
+             statbuf.st_size
+             );
+    struct iovec headerStruct = {.iov_base = headers, .iov_len = strlen(headers)};
+    struct sf_hdtr var = {.headers = &headerStruct, .hdr_cnt = 1, .trailers = NULL, .trl_cnt = 0};
+    off_t len = 0;
+    sendfile(fd, client_socket, 0, &len, &var, 0);
+    printf("bytes sent: %lld\n", len);
+    
+    
+    
+    
+    return 1;
+    
+    
 }

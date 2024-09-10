@@ -10,7 +10,7 @@
 
 #include <stdio.h>
 #define KEY_SIZE 32
-#define VALUE_SIZE 128
+#define VALUE_SIZE 32
 
 
 size_t hashMapSize(void);
@@ -21,4 +21,7 @@ HashMap* CreateHashMap(size_t bucketSize);
 int HashMapAppend(HashMap* hashMap, char* key, size_t keyLen, char* value, size_t valueLen);
 
 void PrintHashMap(HashMap* hashMap);
+
+
+
 #endif /* HashMap_h */

@@ -9,7 +9,7 @@
 #define http_h
 
 #include <stdio.h>
-#include "HashMap.h"
+#include "DataStructures/HashMap.h"
 
 typedef struct HttpRequest {
     int isValid;
@@ -20,6 +20,8 @@ typedef struct HttpRequest {
     size_t bodyLength;
     char* body;  // the request body (if any)
 } HttpRequest;
+
 HttpRequest ParseHttpHeaders(char* request, size_t requestLength);
-int ReceiveRequestHeaders(int client_socket, char* buffer, size_t bufferSize, char** endOfRequest, HttpRequest* hr);
+int ReceiveRequest(int client_socket, char* buffer, size_t bufferSize, char** endOfRequest, HttpRequest* hr);
+int SendResponse(int client_socket, HttpRequest* hr);
 #endif /* http_h */
