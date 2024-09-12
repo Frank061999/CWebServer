@@ -47,22 +47,21 @@ size_t hashMapSize(void){
     return sizeof(HashMap);
 }
 
-int HashMapAppend(HashMap* hashMap, char* key, size_t keyLen, char* value, size_t valueLen){
-    if(keyLen >= KEY_SIZE || valueLen >= VALUE_SIZE) return -1;
-    unsigned long long slot = hash(key, keyLen) % hashMap->tableSize;
+int HashMapAppend(HashMap* hashMap, char* key, char* value){
+    size_t valueLen = strnlen(value, VALUE_SIZE);
+    if(strlen(key) >= KEY_SIZE || valueLen >= VALUE_SIZE) return -1;
+    unsigned long long slot = hash(key, strlen(key)) % hashMap->tableSize;
     int slotsVisited = 0;
 CheckIfEmptySlot:
     if (hashMap->buckets[slot].key[0] =='\0') {
         // TODO: Check +1 logic
-        strncpy(hashMap->buckets[slot].key, key, keyLen);
+        strlcpy(hashMap->buckets[slot].key, key, KEY_SIZE);
         hashMap->buckets[slot].value = (char*) calloc(1, valueLen + 1);
-        strncpy(hashMap->buckets[slot].value, value, valueLen);
-        hashMap->buckets[slot].key[keyLen] = '\0';
-        hashMap->buckets[slot].value[valueLen] = '\0';
+        strlcpy(hashMap->buckets[slot].value, value, valueLen + 1);
         return 0;
     }
     else {
-        if (strncasecmp(key, hashMap->buckets[slot].key, keyLen) == 0) return 1; // Duplicate Key (No updating here)
+        if (strcasecmp(key, hashMap->buckets[slot].key) == 0) return 1; // Duplicate Key (No updating here)
         else {
             if(slotsVisited == hashMap->tableSize) return 2;
             if(slot == hashMap->tableSize - 1){

@@ -8,10 +8,12 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include "DataStructures/CircularQueue.h"
+#include <curses.h>
 
 #define CONNECTION_QUEUE_LEN 500
 #define THREAD_POOL_SIZE 6
 #define BUFFER_SIZE 2048
+#define SOCKET_TIMEOUT_SECONDS 2
 
 char SITE_DIRECTORY[PATH_MAX];
 
@@ -48,19 +50,6 @@ void* threadWorker(void* connectionQueue){
     }
 }
 
-
-void print_with_control_characters(const char *str) {
-    while (*str) {
-        if (*str == '\r') {
-            printf("[CR]");
-        } else if (*str == '\n') {
-            printf("[LF]\n");
-        } else {
-            putchar(*str);
-        }
-        str++;
-    }
-}
 
 int initDirectory(void){
     if(mkdir("site", 0000700) == -1){ // rwx for owner
@@ -106,23 +95,35 @@ int main(int argc, char** argv) {
     
     int opt = 1;
     setsockopt(server_socket_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-    
+    struct timeval timeout = {.tv_sec = SOCKET_TIMEOUT_SECONDS, .tv_usec = 0};
+    if(setsockopt(server_socket_fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0 ||
+       setsockopt(server_socket_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
+    {
+        printf("setsockopt() failed: %s\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
     struct sockaddr_in server_addr;
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = INADDR_ANY;
     server_addr.sin_port = htons(80);
     
     if (bind(server_socket_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0){
-        return 1;
+        printf("bind() failed: %s\n", strerror(errno));
+        exit(EXIT_FAILURE);
     }
     if(listen(server_socket_fd, 100) == 0) printf("Now Listening\n");
+    else {
+        printf("listen() failed: %s\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
     
-    
-    // TODO: Preemptively create a number of threads that are assigned a connection when one is available
     while(1){
         struct sockaddr_in client_addr;
         socklen_t addrlen = sizeof(client_addr);
         int client_socket_fd = accept(server_socket_fd, (struct sockaddr*) &client_addr, &addrlen);
+        char clientIP[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &client_addr.sin_addr, clientIP, INET_ADDRSTRLEN);
+        printf("Accepting connection from %s:\n", clientIP);
         QueueEnqueue(connectionQueue, client_socket_fd);
     }
     

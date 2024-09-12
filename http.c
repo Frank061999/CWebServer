@@ -30,10 +30,9 @@ HttpRequest ParseHttpHeaders(char* request, size_t requestLength){
     
     for (int i = 0; i < 3; i++) {
         char* token = strsep(&requestCopy, " \r\n");
-        if(token == NULL){
-            hr.isValid = 0;
-            return hr;
-        }
+        if(token == NULL) goto InvalidRequest;
+        
+        
         switch (i) {
             case 0:
                 strlcpy(hr.method, token, sizeof(hr.method));
@@ -56,11 +55,13 @@ HttpRequest ParseHttpHeaders(char* request, size_t requestLength){
         char* key = strsep(&line, ":");
         while(*line == ' ') line++; // Skip white space
         char* value = strsep(&line, "\r");
-        HashMapAppend(hr.headers, key, strlen(key)+1, value, strlen(value)+1);
+        HashMapAppend(hr.headers, key, value);
         timesEndofLineEncountered--;
     }
-    if(!HasValidHeaders(&hr)) hr.isValid = 0; else hr.isValid = 1;
-    
+    if(HasValidHeaders(&hr)) hr.isValid = 1;
+    else
+        InvalidRequest:
+        hr.isValid = 0;
     return hr;
 }
 
@@ -126,46 +127,46 @@ ParseRequest:
 }
 void Send500(int client_socket) {
     const char *response_header =
-        "HTTP/1.1 500 Internal Server Error\r\n"
-        "Content-Type: text/html\r\n"
-        "Content-Length: %zu\r\n"
-        "Connection: close\r\n"
-        "\r\n";
+    "HTTP/1.1 500 Internal Server Error\r\n"
+    "Content-Type: text/html\r\n"
+    "Content-Length: %zu\r\n"
+    "Connection: close\r\n"
+    "\r\n";
     
     const char *response_body =
-        "<html><head><title>500 Internal Server Error</title></head>"
-        "<body><h1>500 Internal Server Error</h1>"
-        "<p>There was an error processing your request.</p></body></html>";
-
+    "<html><head><title>500 Internal Server Error</title></head>"
+    "<body><h1>500 Internal Server Error</h1>"
+    "<p>There was an error processing your request.</p></body></html>";
+    
     size_t body_length = strlen(response_body);
     
     char response[1024];
     snprintf(response, sizeof(response), response_header, body_length);
     strncat(response, response_body, sizeof(response) - strlen(response) - 1);
-
+    
     // Send the response to the client
     send(client_socket, response, strlen(response), 0);
 }
 void Send404(int client_socket) {
     const char *response_header =
-        "HTTP/1.1 404 Not Found\r\n"
-        "Content-Type: text/html\r\n"
-        "Content-Length: %zu\r\n"
-        "Connection: close\r\n"
-        "\r\n";
+    "HTTP/1.1 404 Not Found\r\n"
+    "Content-Type: text/html\r\n"
+    "Content-Length: %zu\r\n"
+    "Connection: close\r\n"
+    "\r\n";
     
     const char *response_body =
-        "<html><head><title>404 Not Found</title></head>"
-        "<body><h1>404 Not Found</h1>"
-        "<p>The requested URL was not found on this server.</p></body></html>";
-
+    "<html><head><title>404 Not Found</title></head>"
+    "<body><h1>404 Not Found</h1>"
+    "<p>The requested URL was not found on this server.</p></body></html>";
+    
     size_t body_length = strlen(response_body);
     
-
+    
     char response[strlen(response_header) + body_length + 1];
     snprintf(response, sizeof(response), response_header, body_length);
     strlcat(response, response_body, sizeof(response));
-
+    
     send(client_socket, response, strlen(response), 0);
 }
 int SendResponse(int client_socket, HttpRequest* hr){
@@ -177,7 +178,7 @@ int SendResponse(int client_socket, HttpRequest* hr){
     }
     extern char SITE_DIRECTORY[PATH_MAX];
     char path[PATH_MAX];
-
+    
     char *requestedPath = hr->url;
     if(*requestedPath == '/') requestedPath++;
     if(*requestedPath == '\0'){
