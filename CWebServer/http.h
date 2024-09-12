@@ -13,12 +13,12 @@
 
 typedef struct HttpRequest {
     int isValid;
-    char method[10];  // e.g. "GET", "POST", etc.
-    char url[1024];   // the requested URL
-    char version[10]; // e.g. "HTTP/1.1"
-    HashMap* headers; // a HashMap of request headers
+    char method[10];
+    char url[1024];
+    char version[10];
+    HashMap* headers;
     size_t bodyLength;
-    char* body;  // the request body (if any)
+    char* body;
 } HttpRequest;
 
 HttpRequest ParseHttpHeaders(char* request, size_t requestLength);

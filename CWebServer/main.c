@@ -11,16 +11,16 @@
 
 #define CONNECTION_QUEUE_LEN 500
 #define THREAD_POOL_SIZE 6
+#define BUFFER_SIZE 2048
 
 char SITE_DIRECTORY[PATH_MAX];
 
 
 void* threadWorker(void* connectionQueue){
-    size_t bufferSize = 2048;
-    char* buffer = (char*) malloc(bufferSize); // function runs while the program runs so no need for freeing this
+    char buffer[BUFFER_SIZE];
     while(1)
     {
-        memset(buffer, 0, bufferSize);
+        memset(buffer, 0, BUFFER_SIZE);
         int client_socket_fd = QueueDequeue((CircularQueue*) connectionQueue);
         int errorCode;
         char* nextRequestPTR = buffer;
@@ -28,7 +28,7 @@ void* threadWorker(void* connectionQueue){
         int connectionStatus = 1;
         while(connectionStatus) {
             memset(&hr, 0, sizeof(hr));
-            errorCode = ReceiveRequest(client_socket_fd, buffer, bufferSize, &nextRequestPTR, &hr);
+            errorCode = ReceiveRequest(client_socket_fd, buffer, BUFFER_SIZE, &nextRequestPTR, &hr);
             if(errorCode == -1) {
                 connectionStatus = 0;
                 goto CleanUp;
