@@ -6,7 +6,6 @@
 //
 
 #include "http.h"
-#include "DataStructures/HashMap.h"
 #include <arpa/inet.h>
 #include <string.h>
 #include <limits.h>
@@ -17,18 +16,9 @@
 #include <errno.h>
 #define HEADER_BUCKET_SIZE 29
 
-int isValidPath(char* url){
-    extern char SITE_DIRECTORY[PATH_MAX];
-    char buf[PATH_MAX];
-    if(realpath(url, buf) == NULL){
-        return 0;
-    }
-    return strncmp(SITE_DIRECTORY, buf,strlen(SITE_DIRECTORY)) == 0;
-}
 
 int HasValidHeaders(HttpRequest* hr){
     // TODO: Implement
-    //    if(!isValidPath(hr->url)) return 0;
     return 1;
 }
 
@@ -81,7 +71,7 @@ int isValidHttpVersion(char* version){
     return 1; // TODO: Implement
 }
 
-// This method supports pipelining but apprently pipelining is disabled in most browsers :(
+// This function supports pipelining but apprently pipelining is disabled in most browsers :(
 int ReceiveRequest(int client_socket, char* buffer, size_t bufferSize, char** nextRequestPTR, HttpRequest* hr){
     bufferSize -= 1; // leave space for null terminator
     const char* lastElement = buffer + bufferSize - 1;
@@ -97,7 +87,6 @@ int ReceiveRequest(int client_socket, char* buffer, size_t bufferSize, char** ne
     char* temp;
     int FullRequestAvailable = (temp = strnstr(*nextRequestPTR, "\r\n\r\n", lastElement - *nextRequestPTR + 1)) != NULL;
     if(FullRequestAvailable){
-        // IS THIS NEEDED??? Adjust pointer to point to next request or the start of buffer
         currentRequestPointer = *nextRequestPTR;
         *nextRequestPTR = temp;
         while(**nextRequestPTR == '\r' || **nextRequestPTR == '\n') (*nextRequestPTR)++;
@@ -131,7 +120,7 @@ Receive:
     
 ParseRequest:
     *hr = ParseHttpHeaders(currentRequestPointer, bufferSize); // TODO: Check size
-    
+    if(hr->isValid == 0) return -1;
     // TODO: Handle body
     return 0;
 }
@@ -218,7 +207,7 @@ int SendResponse(int client_socket, HttpRequest* hr){
         }
     }
     int fd;
-    if((fd = open(path, O_RDONLY, O_CREAT | O_EXCL)) == -1){
+    if((fd = open(path, O_RDONLY)) == -1){
         Send500(client_socket);
         return 1;
     }
@@ -245,13 +234,13 @@ int SendResponse(int client_socket, HttpRequest* hr){
     struct iovec headerStruct = {.iov_base = headers, .iov_len = strlen(headers)};
     struct sf_hdtr var = {.headers = &headerStruct, .hdr_cnt = 1, .trailers = NULL, .trl_cnt = 0};
     off_t len = 0;
-    sendfile(fd, client_socket, 0, &len, &var, 0);
+    int code = sendfile(fd, client_socket, 0, &len, &var, 0);
     printf("bytes sent: %lld\n", len);
     
     
     
     
-    return 1;
+    return code;
     
     
 }

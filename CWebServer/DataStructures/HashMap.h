@@ -19,7 +19,7 @@ char* HashMapGet(HashMap* hashMap, const char* key);
 void FreeHashMap(HashMap* hm);
 HashMap* CreateHashMap(size_t bucketSize);
 int HashMapAppend(HashMap* hashMap, char* key, size_t keyLen, char* value, size_t valueLen);
-
+int HashMapContains(HashMap* hm, char* key, char* value);
 void PrintHashMap(HashMap* hashMap);
 
 

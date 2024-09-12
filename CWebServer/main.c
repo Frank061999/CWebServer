@@ -2,45 +2,48 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <stdint.h>
-#include "DataStructures/HashMap.h"
 #include "http.h"
 #include <string.h>
-#include "DataStructures/StaticHashMaps.h"
-#include <unistd.h>
 #include <limits.h>
-#include <sys/stat.h> // for mkdir
-#include <sys/types.h> // for modes
+#include <sys/stat.h>
 #include <errno.h>
+#include "DataStructures/CircularQueue.h"
+
+#define CONNECTION_QUEUE_LEN 20
+#define THREAD_POOL_SIZE 8
 
 char SITE_DIRECTORY[PATH_MAX];
 
-void* handle_client(void* socket){
+
+void* threadWorker(void* connectionQueue){
     pthread_t thread_id = pthread_self();
-    printf("Handling Client %lu\n", (unsigned long)thread_id);
-    int client_socket_fd = (int)(uintptr_t) socket;
+    printf("Handling Client. Thread id: %lu\n", (unsigned long)thread_id);
+    int client_socket_fd = QueueDequeue((CircularQueue*) connectionQueue);
     size_t bufferSize = 2048;
     
     char* buffer = (char*) calloc(1, bufferSize);
     int errorCode;
     char* nextRequestPTR = buffer;
     HttpRequest hr;
-    do {
+    int connectionStatus = 1;
+    while(connectionStatus) {
         memset(&hr, 0, sizeof(hr));
         errorCode = ReceiveRequest(client_socket_fd, buffer, bufferSize, &nextRequestPTR, &hr);
         if(errorCode == -1) {
-            FreeHashMap(hr.headers);
-            break;
+            connectionStatus = 0;
+            goto CleanUp;
         }
-        
         printf("Method: %s\tPath: %s\tVersion: %s\n",hr.method, hr.url, hr.version);
-//        PrintHashMap(hr.headers);
+        //        PrintHashMap(hr.headers);
+        if(SendResponse(client_socket_fd, &hr) == -1 ||
+           HashMapContains(hr.headers, "Connection", "keep-alive") ||
+           strcasecmp(hr.version, "HTTP/1.0") == 0)
+            connectionStatus = 0;
         
-        SendResponse(client_socket_fd, &hr);
-//        pthread_t thread_id = pthread_self();
-//        printf("Sent message! Thread id: %lu\n", (unsigned long)thread_id);
+    CleanUp:
+        if(hr.body != NULL) free(hr.body);
         FreeHashMap(hr.headers);
-    } while (errorCode != -1);
+    }
     
     
     
@@ -90,9 +93,19 @@ int initDirectory(void){
 }
 
 int main(int argc, char** argv) {
-
     initDirectory();
     
+    // Trick to have undefined type on the stack
+    char temp[sizeofQueueStruct() + (CONNECTION_QUEUE_LEN * sizeof(int))];
+    CircularQueue* connectionQueue = (CircularQueue*) temp;
+    QueueInit(connectionQueue, CONNECTION_QUEUE_LEN);
+    
+    // Initalize threads
+    pthread_t threadPool[THREAD_POOL_SIZE];
+    for (int i = 0; i < THREAD_POOL_SIZE; i++) {
+        pthread_create(&threadPool[i], NULL, threadWorker, connectionQueue);
+        pthread_detach(threadPool[i]);
+    }
     
     int server_socket_fd = socket(AF_INET, SOCK_STREAM, 0);
     if(server_socket_fd < 0){
@@ -112,13 +125,13 @@ int main(int argc, char** argv) {
     }
     if(listen(server_socket_fd, 10) == 0) printf("Now Listening\n");
     
+
+    // TODO: Preemptively create a number of threads that are assigned a connection when one is available
     while(1){
         struct sockaddr_in client_addr;
         socklen_t addrlen = sizeof(client_addr);
         int client_socket_fd = accept(server_socket_fd, (struct sockaddr*) &client_addr, &addrlen);
-        pthread_t thread;
-        pthread_create(&thread, NULL, handle_client, (void*)(uintptr_t) client_socket_fd);
-        pthread_detach(thread);
+        QueueEnqueue(connectionQueue, client_socket_fd);
     }
     
     return 0;

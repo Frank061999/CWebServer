@@ -11,6 +11,7 @@
 		016BD8F82C5CB75D001E099B /* HashMap.c in Sources */ = {isa = PBXBuildFile; fileRef = 016BD8F72C5CB75D001E099B /* HashMap.c */; };
 		016BD8FD2C5EC70E001E099B /* http.c in Sources */ = {isa = PBXBuildFile; fileRef = 016BD8FC2C5EC70E001E099B /* http.c */; };
 		01BF8A612C8AD59700C13C01 /* StaticHashMaps.c in Sources */ = {isa = PBXBuildFile; fileRef = 01BF8A602C8AD59700C13C01 /* StaticHashMaps.c */; };
+		01BF8A642C92617700C13C01 /* CircularQueue.c in Sources */ = {isa = PBXBuildFile; fileRef = 01BF8A632C92617700C13C01 /* CircularQueue.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -34,6 +35,8 @@
 		016BD8FC2C5EC70E001E099B /* http.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = http.c; sourceTree = "<group>"; };
 		01BF8A5F2C8AD59700C13C01 /* StaticHashMaps.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = StaticHashMaps.h; sourceTree = "<group>"; };
 		01BF8A602C8AD59700C13C01 /* StaticHashMaps.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = StaticHashMaps.c; sourceTree = "<group>"; };
+		01BF8A622C92617700C13C01 /* CircularQueue.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CircularQueue.h; sourceTree = "<group>"; };
+		01BF8A632C92617700C13C01 /* CircularQueue.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = CircularQueue.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -81,6 +84,8 @@
 				016BD8F72C5CB75D001E099B /* HashMap.c */,
 				01BF8A5F2C8AD59700C13C01 /* StaticHashMaps.h */,
 				01BF8A602C8AD59700C13C01 /* StaticHashMaps.c */,
+				01BF8A622C92617700C13C01 /* CircularQueue.h */,
+				01BF8A632C92617700C13C01 /* CircularQueue.c */,
 			);
 			path = DataStructures;
 			sourceTree = "<group>";
@@ -145,6 +150,7 @@
 				016BD8F82C5CB75D001E099B /* HashMap.c in Sources */,
 				016BD8F02C506EAF001E099B /* main.c in Sources */,
 				01BF8A612C8AD59700C13C01 /* StaticHashMaps.c in Sources */,
+				01BF8A642C92617700C13C01 /* CircularQueue.c in Sources */,
 				016BD8FD2C5EC70E001E099B /* http.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
