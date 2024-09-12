@@ -9,49 +9,43 @@
 #include <errno.h>
 #include "DataStructures/CircularQueue.h"
 
-#define CONNECTION_QUEUE_LEN 20
-#define THREAD_POOL_SIZE 8
+#define CONNECTION_QUEUE_LEN 500
+#define THREAD_POOL_SIZE 6
 
 char SITE_DIRECTORY[PATH_MAX];
 
 
 void* threadWorker(void* connectionQueue){
-    pthread_t thread_id = pthread_self();
-    printf("Handling Client. Thread id: %lu\n", (unsigned long)thread_id);
-    int client_socket_fd = QueueDequeue((CircularQueue*) connectionQueue);
     size_t bufferSize = 2048;
-    
-    char* buffer = (char*) calloc(1, bufferSize);
-    int errorCode;
-    char* nextRequestPTR = buffer;
-    HttpRequest hr;
-    int connectionStatus = 1;
-    while(connectionStatus) {
-        memset(&hr, 0, sizeof(hr));
-        errorCode = ReceiveRequest(client_socket_fd, buffer, bufferSize, &nextRequestPTR, &hr);
-        if(errorCode == -1) {
-            connectionStatus = 0;
-            goto CleanUp;
+    char* buffer = (char*) malloc(bufferSize); // function runs while the program runs so no need for freeing this
+    while(1)
+    {
+        memset(buffer, 0, bufferSize);
+        int client_socket_fd = QueueDequeue((CircularQueue*) connectionQueue);
+        int errorCode;
+        char* nextRequestPTR = buffer;
+        HttpRequest hr;
+        int connectionStatus = 1;
+        while(connectionStatus) {
+            memset(&hr, 0, sizeof(hr));
+            errorCode = ReceiveRequest(client_socket_fd, buffer, bufferSize, &nextRequestPTR, &hr);
+            if(errorCode == -1) {
+                connectionStatus = 0;
+                goto CleanUp;
+            }
+            printf("Method: %s\tPath: %s\tVersion: %s\n",hr.method, hr.url, hr.version);
+            //        PrintHashMap(hr.headers);
+            if(SendResponse(client_socket_fd, &hr) == -1 ||
+               HashMapContains(hr.headers, "Connection", "keep-alive") ||
+               strcasecmp(hr.version, "HTTP/1.0") == 0)
+                connectionStatus = 0;
+            
+        CleanUp:
+            if(hr.body != NULL) free(hr.body);
+            FreeHashMap(hr.headers);
         }
-        printf("Method: %s\tPath: %s\tVersion: %s\n",hr.method, hr.url, hr.version);
-        //        PrintHashMap(hr.headers);
-        if(SendResponse(client_socket_fd, &hr) == -1 ||
-           HashMapContains(hr.headers, "Connection", "keep-alive") ||
-           strcasecmp(hr.version, "HTTP/1.0") == 0)
-            connectionStatus = 0;
-        
-    CleanUp:
-        if(hr.body != NULL) free(hr.body);
-        FreeHashMap(hr.headers);
+        close(client_socket_fd);
     }
-    
-    
-    
-    
-    
-    close(client_socket_fd);
-    free(buffer);
-    return NULL;
 }
 
 
@@ -95,13 +89,11 @@ int initDirectory(void){
 int main(int argc, char** argv) {
     initDirectory();
     
-    // Trick to have undefined type on the stack
-    char temp[sizeofQueueStruct() + (CONNECTION_QUEUE_LEN * sizeof(int))];
-    CircularQueue* connectionQueue = (CircularQueue*) temp;
-    QueueInit(connectionQueue, CONNECTION_QUEUE_LEN);
+    
+    CircularQueue* connectionQueue = QueueInit(THREAD_POOL_SIZE);
     
     // Initalize threads
-    pthread_t threadPool[THREAD_POOL_SIZE];
+    pthread_t threadPool[CONNECTION_QUEUE_LEN];
     for (int i = 0; i < THREAD_POOL_SIZE; i++) {
         pthread_create(&threadPool[i], NULL, threadWorker, connectionQueue);
         pthread_detach(threadPool[i]);
@@ -123,9 +115,9 @@ int main(int argc, char** argv) {
     if (bind(server_socket_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0){
         return 1;
     }
-    if(listen(server_socket_fd, 10) == 0) printf("Now Listening\n");
+    if(listen(server_socket_fd, 100) == 0) printf("Now Listening\n");
     
-
+    
     // TODO: Preemptively create a number of threads that are assigned a connection when one is available
     while(1){
         struct sockaddr_in client_addr;

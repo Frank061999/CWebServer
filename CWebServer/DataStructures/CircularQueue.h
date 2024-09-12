@@ -9,9 +9,9 @@
 #define CircularQueue_h
 
 #include <stdio.h>
-typedef struct __CircularQueue_t CircularQueue;
-void QueueInit(CircularQueue *q, int size);
-int QueueEnqueue(CircularQueue *q, int item);
-int QueueDequeue(CircularQueue *q);
-size_t sizeofQueueStruct(void);
+typedef struct CircularQueue CircularQueue;
+CircularQueue* QueueInit(int maxSize);
+void QueueEnqueue(CircularQueue* q, int new);
+int QueueDequeue(CircularQueue* q);
+
 #endif /* CircularQueue_h */
