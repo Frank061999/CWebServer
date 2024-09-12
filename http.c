@@ -31,8 +31,6 @@ HttpRequest ParseHttpHeaders(char* request, size_t requestLength){
     for (int i = 0; i < 3; i++) {
         char* token = strsep(&requestCopy, " \r\n");
         if(token == NULL) goto InvalidRequest;
-        
-        
         switch (i) {
             case 0:
                 strlcpy(hr.method, token, sizeof(hr.method));

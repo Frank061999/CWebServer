@@ -1,8 +1,10 @@
 cmake_minimum_required(VERSION 3.30)
 project(CWebServer)
 
-# Collect all .cpp files in the src directory
-file(GLOB_RECURSE SOURCES "./*.c")
 
-# Add an executable target
+file(GLOB SOURCES "./*.c")
+file(GLOB DATASTRUCTURES_SOURCES "DataStructures/*.c")
+
+list(APPEND SOURCES ${DATASTRUCTURES_SOURCES})
+
 add_executable(Server ${SOURCES})
