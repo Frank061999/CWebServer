@@ -23,7 +23,7 @@ void* threadWorker(void* connectionQueue){
 	while(1)
 	{
 		memset(buffer, 0, BUFFER_SIZE);
-		int client_socket_fd = QueueDequeue((CircularQueue*) connectionQueue);
+		int client_socket_fd = QueueDequeue((CircularQueue*) connectionQueue); // Will sleep on this if queue is empty
 		int errorCode;
 		char* nextRequestPTR = buffer;
 		HttpRequest hr;
@@ -38,7 +38,7 @@ void* threadWorker(void* connectionQueue){
 			printf("Method: %s\tPath: %s\tVersion: %s\n",hr.method, hr.url, hr.version);
 			// PrintHashMap(hr.headers);
 			if(SendResponse(client_socket_fd, &hr) == -1 ||
-				HashMapContains(hr.headers, "Connection", "keep-alive") ||
+				HashMapContains(hr.headers, "Connection", "close") ||
 				strcasecmp(hr.version, "HTTP/1.0") == 0)
 					connectionStatus = 0;
 
