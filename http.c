@@ -241,14 +241,14 @@ int SendResponse(int client_socket, HttpRequest* hr){
     #ifdef __linux__
     int code = send(client_socket, headers, strnlen(headers, sizeof(headers)), 0);
     if(code > 0) {
-        code = sendfile(fd, client_socket, NULL, statbuf.st_size);
+        code = sendfile(client_socket, fd, NULL, statbuf.st_size);
         printf("bytes sent: %d\n", code);
     }
     #elif __APPLE__
     off_t len = 0;
     struct iovec headerStruct = {.iov_base = headers, .iov_len = strlen(headers)};
     struct sf_hdtr var = {.headers = &headerStruct, .hdr_cnt = 1, .trailers = NULL, .trl_cnt = 0};
-    int code = sendfile(client_socket, fd, 0, &len, &var, 0);
+    int code = sendfile(fd, client_socket, 0, &len, &var, 0);
     printf("bytes sent: %lld\n", len);
     #endif
 
