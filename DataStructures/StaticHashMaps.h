@@ -8,7 +8,7 @@
 #ifndef StaticHashMaps_h
 #define StaticHashMaps_h
 
-#include <stdio.h>
+
 const char* GetMime(const char* key);
 const int isValidHttpMethod(char* method);
 extern char defaultMime[];

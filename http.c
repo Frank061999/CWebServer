@@ -16,6 +16,8 @@
 #include <errno.h>
 #ifdef __linux__
 #include <linux/limits.h>
+#include "strl.h"
+#include <sys/sendfile.h>
 #elif __APPLE__
 #include <limits.h>
 #endif
@@ -240,7 +242,7 @@ int SendResponse(int client_socket, HttpRequest* hr){
     int code = send(client_socket, headers, strnlen(headers, sizeof(headers)), 0);
     if(code > 0) {
         code = sendfile(fd, client_socket, NULL, statbuf.st_size);
-        printf("bytes sent: %lld\n", code);
+        printf("bytes sent: %d\n", code);
     }
     #elif __APPLE__
     off_t len = 0;
