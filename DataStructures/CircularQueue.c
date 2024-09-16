@@ -12,7 +12,13 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+#ifdef __linux__
+#include <fcntl.h>
+#include <sys/stat.h>
+#endif
 
+
+                                         
 
 typedef struct CircularQueue {
     int count;
