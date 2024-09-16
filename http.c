@@ -186,14 +186,19 @@ int SendResponse(int client_socket, HttpRequest* hr){
     char path[PATH_MAX];
     
     char *requestedPath = hr->url;
+    char* result;
     if(*requestedPath == '/') requestedPath++;
     if(*requestedPath == '\0'){
-        requestedPath = alloca(strlen(hr->url) + 4);
+        char temp[3];
+        requestedPath = temp;
         requestedPath[0] = '.';
         requestedPath[1] = '/';
+        requestedPath[2] = '\0';
+        realpath(requestedPath, path);
     }
-    char* result = realpath(requestedPath, path);
+    else result = realpath(requestedPath, path);
     if(result == NULL || strncmp(SITE_DIRECTORY, path, strlen(SITE_DIRECTORY)) != 0){
+        printf("requested path:  %s, strncmp: %d", requestedPath ,strncmp(SITE_DIRECTORY, path, strlen(SITE_DIRECTORY)));
         Send404(client_socket);
         return 1;
     }
