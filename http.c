@@ -8,12 +8,18 @@
 #include "http.h"
 #include <arpa/inet.h>
 #include <string.h>
-#include <limits.h>
+
 #include <stdlib.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include "DataStructures/StaticHashMaps.h"
 #include <errno.h>
+#ifdef __linux__
+#include <linux/limits.h>
+#elif __APPLE__
+#include <limits.h>
+#endif
+
 #define HEADER_BUCKET_SIZE 29
 
 
@@ -230,15 +236,22 @@ int SendResponse(int client_socket, HttpRequest* hr){
              mime,
              statbuf.st_size
              );
+    #ifdef __linux__
+    int code = send(client_socket, headers, strnlen(headers, sizeof(headers)), 0);
+    if(code > 0) {
+        code = sendfile(fd, client_socket, NULL, statbuf.st_size);
+        printf("bytes sent: %lld\n", code);
+    }
+    #elif __APPLE__
+    off_t len = 0;
     struct iovec headerStruct = {.iov_base = headers, .iov_len = strlen(headers)};
     struct sf_hdtr var = {.headers = &headerStruct, .hdr_cnt = 1, .trailers = NULL, .trl_cnt = 0};
-    off_t len = 0;
     int code = sendfile(fd, client_socket, 0, &len, &var, 0);
     printf("bytes sent: %lld\n", len);
+    #endif
+
     
-    
-    
-    
+    // In linux code will be number of bytes sent or -1 for fail, in osx 0 success -1 fail 
     return code;
     
     

@@ -4,11 +4,16 @@
 #include <stdlib.h>
 #include "http.h"
 #include <string.h>
-#include <limits.h>
 #include <sys/stat.h>
 #include <errno.h>
 #include "DataStructures/CircularQueue.h"
-#include <curses.h>
+
+#ifdef __linux__
+#include <linux/limits.h>
+#include <sys/time.h>
+#elif __APPLE__
+#include <limits.h>
+#endif
 
 #define CONNECTION_QUEUE_LEN 500
 #define THREAD_POOL_SIZE 6
