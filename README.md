@@ -1,10 +1,10 @@
 <h1>Lightweight, Multithreaded C Web Server</h1>
-<p>This project showcases a practical implementation of a lightweight web server built in C, designed to handle multiple client connections efficiently. Key features include:</p>
+<p>This project is a custom-built web server developed entirely from scratch in C, showcasing a deep understanding of network programming and systems design. It includes:</p>
 <ul>
-  <li><strong>Multithreading</strong>: A thread pool architecture distributes incoming requests to worker threads, optimizing performance under various loads.</li>
-  <li><strong>HTTP Parsing</strong>: Includes a custom HTTP request parser that efficiently handles headers and pipelined requests.</li>
-  <li><strong>Socket Programming</strong>: Manages connection lifecycles, binding, listening, and accepting client connections, with configurable timeouts for inactive clients.</li>
-  <li><strong>Cross-Platform Support</strong>: Compatible with Linux and macOS, incorporating platform-specific optimizations like <code>sendfile()</code> for efficient data transfers.</li>
-  <li><strong>Scalability</strong>: The server is flexible, allowing thread pool size and other parameters to be adjusted for various deployment needs.</li>
+  <li><strong>Custom Data Structures</strong>: Developed unique data structures, including a custom HTTP parser and hash maps, tailored for efficient request handling and resource management.</li>
+  <li><strong>Multithreading</strong>: Implemented a thread pool architecture that distributes client requests across worker threads, ensuring high concurrency and performance.</li>
+  <li><strong>Socket Programming</strong>: Handles socket creation, binding, and connection management with configurable timeouts for inactive connections.</li>
+  <li><strong>Cross-Platform Support</strong>: Optimized for both Linux and macOS, utilizing platform-specific features like <code>sendfile()</code> for faster data transfers.</li>
+  <li><strong>Scalable Design</strong>: Adjustable thread pool size and configurable parameters allow the server to scale based on application needs.</li>
 </ul>
-<p>This project reflects an exploration of low-level network programming and multithreading, offering a foundation for building server applications.</p>
+<p>This project highlights a solid foundation in low-level programming, offering full control over memory management and performance, with everything built from the ground up.</p>
