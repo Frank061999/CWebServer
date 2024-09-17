@@ -2,6 +2,7 @@
 <p>This project is a custom-built web server developed entirely from scratch in C. It includes:</p>
 <ul>
   <li><strong>Custom Data Structures</strong>: thread-safe circular queue with semaphores, hash map, statically allocated hash set for MIME types and HTTP request types</li>
+  <li><strong>Custom HTTP Parser</strong>: Built a lightweight parser from scratch to handle HTTP requests.</li>
   <li><strong>Multithreading</strong>: Implemented a thread pool architecture that distributes client requests across worker threads, ensuring high concurrency and performance.</li>
   <li><strong>Socket Programming</strong>: Handles socket creation, binding, and connection management with configurable timeouts for inactive connections.</li>
   <li><strong>Cross-Platform Support</strong>: Optimized for both Linux and macOS, utilizing platform-specific features like <code>sendfile()</code> for faster data transfers.</li>
