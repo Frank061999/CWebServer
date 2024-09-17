@@ -9,3 +9,7 @@
   <li><strong>Scalable Design</strong>: Adjustable thread pool size and configurable parameters allow the server to scale based on application needs.</li>
 </ul>
 <p>This project is built from scratch, including custom data structures and efficient memory management, with a focus on performance.</p>
+<h1>Usage</h1>
+By default, the server looks for the website in a folder called "site" at the current working directory. If the folder doesn't exist, the server will create an empty folder.
+Otherwise, you can specify the path to the website directory as the first argument <br/><br/>
+<code> USAGE: CWebServer [DIR] </code>
