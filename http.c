@@ -176,11 +176,11 @@ void Send404(int client_socket) {
     send(client_socket, response, strlen(response), 0);
 }
 int SendResponse(int client_socket, HttpRequest* hr){
-    
+    // TODO: Too many system calls. Minimize their use
     if(!hr->isValid) {
         char* response = "HTTP/1.1 400 Bad Request\r\n\r\n";
         send(client_socket, response, strlen(response), 0);
-        return 1;
+        return -1;
     }
     extern char SITE_DIRECTORY[PATH_MAX];
     char path[PATH_MAX];
@@ -207,15 +207,16 @@ int SendResponse(int client_socket, HttpRequest* hr){
     struct stat statbuf;
     if (stat(path, &statbuf) != 0) {
         Send500(client_socket);
-        return 1;
+        return -1;
     }
     if(S_ISDIR(statbuf.st_mode)){
         char* temp = "/index.html";
         strlcat(path, temp, PATH_MAX);
+        // TODO: Remove this? Deal with the case when file doesnt' exist when open() is called
         if (stat(path, &statbuf) != 0) {
             if(errno == ENOENT) Send404(client_socket);
             else Send500(client_socket);
-            return 1;
+            return -1;
         }
     }
     int fd;
