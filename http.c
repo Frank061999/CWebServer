@@ -256,7 +256,7 @@ int SendResponse(int client_socket, HttpRequest* hr){
     int code = sendfile(fd, client_socket, 0, &len, &var, 0);
     printf("bytes sent: %lld\n", len);
     #endif
-
+    close(fd);
     
     // In linux code will be number of bytes sent or -1 for fail, in osx 0 success -1 fail 
     return code;
