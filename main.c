@@ -15,7 +15,7 @@
 #include <limits.h>
 #endif
 
-#define CONNECTION_QUEUE_LEN 500
+#define CONNECTION_QUEUE_LEN 64
 #define THREAD_POOL_SIZE 6
 #define BUFFER_SIZE 2048
 #define SOCKET_TIMEOUT_SECONDS 2

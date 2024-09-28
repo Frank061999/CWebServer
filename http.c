@@ -99,13 +99,15 @@ int ReceiveRequest(int client_socket, char* buffer, size_t bufferSize, char** ne
         while(**nextRequestPTR == '\r' || **nextRequestPTR == '\n') (*nextRequestPTR)++;
         if(*nextRequestPTR > lastElement) *nextRequestPTR = buffer;
         goto ParseRequest;
-    } else {
+    } else if(**nextRequestPTR != '\0') {
         // Partial request
         // Move partial request to start of buffer
-        size_t partialSize = strnlen(*nextRequestPTR, lastElement - *nextRequestPTR + 1);
+        size_t partialSize = strlen(*nextRequestPTR);
         memcpy(buffer, *nextRequestPTR, partialSize);
         memset(buffer + partialSize , 0, bufferSize - partialSize);
         iterator = buffer + partialSize;
+    } else { // Nothing left in buffer -> reset buffer
+        memset(buffer, 0, bufferSize);
     }
     
 Receive:
@@ -113,11 +115,11 @@ Receive:
     while(1) {
         size_t bytesToReceive = lastElement - iterator + 1;
         if(bytesToReceive == 0) return -1;
-        ssize_t bytesReceived = recv(client_socket, iterator, bytesToReceive, 0); // TODO: Add timeout
+        ssize_t bytesReceived = recv(client_socket, iterator, bytesToReceive, 0); 
         if(bytesReceived <= 0) return -1;
         iterator += bytesReceived;
         if((temp = strnstr(readFrom, "\r\n\r\n", bufferSize)) != NULL) break;
-        else readFrom = iterator - buffer < 2 ? buffer : iterator - 2;
+        else readFrom = iterator - 2 < buffer ? buffer : iterator - 2;
     }
     currentRequestPointer = buffer;
     *nextRequestPTR = temp;
